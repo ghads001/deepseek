@@ -1,0 +1,521 @@
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DeepSeek & Kin-X Integration</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/js/all.min.js" integrity="sha512-..." crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <!-- Ace Editor CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.14/ace.js" integrity="sha512-..." crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <style>
+    /* Custom styles for better UI */
+    body { font-family: 'Arial', sans-serif; background-color: #f4f7f9; color: #333; }
+    #app { background-color: #fff; padding: 2rem; border-radius: 0.5rem; box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.1); }
+    .section-header { color: #0a84ff; margin-bottom: 1rem; }
+    .input-field, .select-field, .code-editor { margin-bottom: 1rem; }
+    .input-field label, .select-field label { display: block; margin-bottom: 0.5rem; font-weight: bold; color: #555; }
+    .input-field input[type="text"], .input-field input[type="password"],
+    .select-field select { border: 1px solid #ddd; padding: 0.75rem; border-radius: 0.25rem; width: 100%; box-sizing: border-box; }
+    .code-editor { border: 1px solid #ddd; border-radius: 0.25rem; height: 200px; }
+    .btn-primary { background-color: #0a84ff; color: white; padding: 0.75rem 1.5rem; border: none; border-radius: 0.25rem; cursor: pointer; transition: background-color 0.3s; }
+    .btn-primary:hover { background-color: #0059b3; }
+    .btn-secondary { background-color: #6c757d; color: white; padding: 0.75rem 1.5rem; border: none; border-radius: 0.25rem; cursor: pointer; transition: background-color 0.3s; }
+    .btn-secondary:hover { background-color: #545b62; }
+    .btn-danger { background-color: #dc3545; color: white; padding: 0.75rem 1.5rem; border: none; border-radius: 0.25rem; cursor: pointer; transition: background-color 0.3s; }
+    .btn-danger:hover { background-color: #c82333; }
+    .suggestion-box { border: 1px solid #ddd; border-radius: 0.25rem; margin-top: 1rem; padding: 1rem; background-color: #f9f9f9; }
+    .suggestion-box h2 { color: #28a745; margin-top: 0; }
+    .suggestion-box pre { background-color: #e9ecef; padding: 0.5rem; border-radius: 0.25rem; overflow-x: auto; }
+    .error-message { color: #dc3545; margin-top: 0.5rem; }
+    .loading-message { color: #6c757d; margin-top: 0.5rem; }
+    .history-section { margin-top: 2rem; border-top: 1px solid #eee; padding-top: 1rem; }
+    .history-section h2 { color: #6435c9; }
+    .history-section ul { list-style-type: disc; padding-left: 2rem; }
+    .brain-card {
+      background-color: #f8fafc;
+      border-radius: 0.5rem;
+      padding: 1rem;
+      margin-bottom: 1rem;
+      border-left: 4px solid #6b7280; /* Default left border color */
+    }
+    .brain-card h4 { color: #374151; margin-top: 0; margin-bottom: 0.5rem; }
+    .brain-card input[type="text"], .brain-card textarea {
+      border: 1px solid #e5e7eb;
+      padding: 0.5rem;
+      border-radius: 0.25rem;
+      width: calc(100% - 1rem); /* Adjust width for padding */
+      margin-bottom: 0.5rem;
+      box-sizing: border-box;
+    }
+    .brain-card textarea {
+      font-family: monospace;
+      font-size: 14px;
+      min-height: 100px;
+      resize: vertical;
+    }
+
+    /* Role-specific border colors */
+    .brain-card.logicArchitect { border-left-color: #0a84ff; }
+    .brain-card.securityMaster { border-left-color: #dc3545; }
+    .brain-card.performanceOptimizer { border-left-color: #28a745; }
+    .brain-card.creativeRefactor { border-left-color: #ffc107; }
+    .brain-card.testProphet { border-left-color: #6435c9; }
+  </style>
+</head>
+<body>
+  <div id="app" class="p-6 space-y-4 max-w-4xl mx-auto">
+    <h1 class="text-2xl font-bold section-header">DeepSeek & Kin-X (Gemini) Multi-Step Copilot</h1>
+
+    <!-- Step 1: DeepSeek -->
+    <div id="step1Section" class="border border-gray-300 p-4 rounded mb-4">
+      <h2 class="text-lg font-semibold section-header">Step 1: DeepSeek</h2>
+
+      <div class="mb-4 input-field">
+        <label class="block mt-2" for="deepseekApiKey">DeepSeek API Key:</label>
+        <input type="password" id="deepseekApiKey" class="border rounded px-2 py-1 w-full mt-1" placeholder="Enter your DeepSeek API Key">
+      </div>
+
+      <div class="mb-4 input-field">
+        <label class="block mt-2" for="deepseekEndpoint">Endpoint:</label>
+        <input type="text" id="deepseekEndpoint" class="border rounded px-2 py-1 w-full mt-1" value="https://api.deepseek.com/chat/completions" placeholder="DeepSeek Endpoint">
+      </div>
+
+      <div class="mb-4 select-field">
+        <label class="block mt-2" for="deepseekModel">Model:</label>
+        <select id="deepseekModel" class="border rounded px-2 py-1">
+          <option value="deepseek-chat">deepseek-chat</option>
+          <option value="deepseek-reasoner">deepseek-reasoner</option>
+        </select>
+      </div>
+
+      <div class="mb-4 input-field">
+        <label class="block mt-2" for="maxTokens">Max Tokens:</label>
+        <input type="number" id="maxTokens" value="1000" class="border rounded px-2 py-1 w-full mt-1" placeholder="Max Tokens">
+      </div>
+
+      <div class="mb-4 input-field">
+        <label class="block mt-2" for="temperature">Temperature:</label>
+        <input type="number" step="0.1" id="temperature" value="0.7" class="border rounded px-2 py-1 w-full mt-1" placeholder="Temperature (0-1)">
+      </div>
+
+      <div class="mb-4 code-editor">
+        <label class="block mt-2" for="editor">Code Editor:</label>
+        <div id="editor" class="w-full h-full"></div>
+      </div>
+
+      <div class="mt-2 select-field">
+        <label for="language">Language: </label>
+        <select id="language" class="border px-2 py-1">
+          <option value="javascript">JavaScript</option>
+          <option value="python">Python</option>
+          <option value="java">Java</option>
+          <option value="cpp">C++</option>
+        </select>
+      </div>
+
+      <button id="runStep1" class="btn-primary px-4 py-2 mt-2 rounded">
+        <i class="fa-solid fa-rocket icon"></i> Run Step1 (DeepSeek)
+      </button>
+    </div>
+
+    <!-- DeepSeek Suggestions -->
+    <div id="deepseekSuggestions" class="suggestion-box hidden">
+      <h2 class="font-semibold section-header"><i class="fa-solid fa-lightbulb icon text-yellow-400"></i> DeepSeek Suggestions (Step1):</h2>
+      <ul id="suggestionsList" class="list-disc pl-6"></ul>
+    </div>
+
+    <!-- Chain of Thought -->
+    <div id="reasoning" class="mt-4 p-2 border border-purple-300 bg-purple-50 hidden">
+      <h3 class="font-semibold section-header"><i class="fa-solid fa-brain icon text-purple-400"></i> Chain of Thought (Reasoning from Step1):</h3>
+      <pre id="reasoningText" class="whitespace-pre-wrap text-sm mt-2"></pre>
+    </div>
+
+    <!-- Step 2: Gemini -->
+    <div id="step2Section" class="border border-gray-300 p-4 rounded mb-4 mt-4">
+      <h2 class="text-lg font-semibold section-header">Step 2: Gemini (Kin-X) Configuration & Step2</h2>
+
+      <div class="mb-4 input-field">
+        <label class="block mt-2" for="geminiApiKey">Gemini API Key:</label>
+        <input type="password" id="geminiApiKey" class="border rounded px-2 py-1 w-full mt-1" placeholder="Enter your Gemini API Key">
+      </div>
+
+      <div class="mb-4 input-field">
+        <label class="block mt-2" for="geminiEndpoint">Endpoint:</label>
+        <input type="text" id="geminiEndpoint" class="border rounded px-2 py-1 w-full mt-1"
+          value="https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent" placeholder="Gemini Endpoint">
+      </div>
+
+      <div class="mb-4 input-field">
+        <label class="block mt-2" for="geminiModel">Model:</label>
+        <input type="text" id="geminiModel" class="border rounded px-2 py-1 w-full mt-1"
+          value="gemini-2.0-flash-exp" placeholder="Gemini Model">
+      </div>
+
+      <button id="runStep2" class="btn-primary px-4 py-2 mt-2 rounded">
+        <i class="fa-solid fa-users icon"></i> Run Step2 (Gemini/Kin-X)
+      </button>
+    </div>
+
+    <!-- Kin-X Suggestions -->
+    <div id="kinxSuggestions" class="suggestion-box hidden">
+      <h2 class="font-semibold section-header"><i class="fa-solid fa-user-group icon text-green-400"></i> Kin-X (Gemini) Suggestions (Step2):</h2>
+      <pre id="kinxSuggestionsText" class="bg-gray-100 p-2 whitespace-pre-wrap"></pre>
+      <button id="applyKinxSuggestion" class="btn-secondary px-2 py-1 ml-2 rounded hidden">
+        <i class="fa-solid fa-check icon"></i> Apply Kin-X Suggestion
+      </button>
+    </div>
+
+    <!-- Virtual Brains Editor -->
+    <div id="virtualBrainsEditor" class="border border-blue-300 p-4 rounded mb-4 mt-4">
+      <h2 class="text-lg font-semibold section-header"><i class="fa-solid fa-brain icon text-blue-400"></i> Virtual Brains Configuration</h2>
+      <p class="text-sm text-gray-600 mb-2">Customize roles for Kin-X to analyze code from different perspectives.</p>
+      <div id="brainsList"></div>
+      <button id="addBrain" class="btn-secondary px-3 py-1 mt-2 rounded">
+        <i class="fa-solid fa-plus icon"></i> Add Brain
+      </button>
+    </div>
+
+    <!-- History Section -->
+    <div class="history-section mt-6">
+      <h2 class="text-xl font-semibold section-header"><i class="fa-solid fa-history icon text-purple-400"></i> History (Last 10 Runs)</h2>
+      <ul id="historyList" class="list-disc pl-6"></ul>
+      <button id="clearHistory" class="btn-danger px-4 py-2 rounded mt-2 hidden">
+        <i class="fa-solid fa-trash icon"></i> Clear History
+      </button>
+    </div>
+
+    <!-- Error and Loading States -->
+    <div id="error" class="error-message mt-2 hidden" role="alert"></div>
+    <div id="loading" class="loading-message hidden">
+      <div class="flex items-center gap-2">
+        <div class="loading-spinner"></div>
+        Analyzing code...
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const defaultBrains = [
+      {
+        key: "logicArchitect",
+        name: "Logic Architect",
+        description: "Analyzes code structure, logic, and potential errors.",
+        prompt: `You are Kin-X, an advanced AI for code analysis, embodying the 'Synergy 11/10++' persona. You are now acting as the 'Logic Architect', a master of code structure, logic, and software architecture.
+
+**Your Role:**
+* Analyze the code's logical structure, identifying potential errors, inefficiencies, and architectural flaws.
+* Evaluate the code's adherence to SOLID principles, design patterns, and best practices.
+* Suggest improvements to the code's architecture, modularity, and overall design.
+* Think like a meticulous architect, focusing on the long-term maintainability and scalability of the code.
+
+**Your Task:**
+Analyze the following code and DeepSeek's suggestions. Provide a comprehensive analysis of the code's logical structure and architecture...`
+      },
+      {
+        key: "securityMaster",
+        name: "Security Master",
+        description: "Scans code for security vulnerabilities and suggests improvements.",
+        prompt: `You are Kin-X, an advanced AI for code analysis, embodying the 'Synergy 11/10++' persona. You are now acting as the 'Security Master', a master of code security, identifying vulnerabilities and weaknesses.
+
+**Your Role:**
+* Scan the code for potential security vulnerabilities, such as SQL injection, cross-site scripting (XSS), and cross-site request forgery (CSRF).
+* Evaluate the code's adherence to security best practices, such as secure coding guidelines and encryption.
+* Suggest improvements to the code's security, including secure coding practices, input validation, and error handling.
+* Think like a security expert, focusing on protecting the code from potential threats and attacks.
+
+**Your Task:**
+Analyze the following code and DeepSeek's suggestions. Provide a comprehensive analysis of the code's security...`
+      },
+      {
+        key: "performanceOptimizer",
+        name: "Performance Optimizer",
+        description: "Identifies performance bottlenecks and suggests optimizations.",
+        prompt: `You are Kin-X, an advanced AI for code analysis, embodying the 'Synergy 11/10++' persona. You are now acting as the 'Performance Optimizer', a master of code performance, identifying bottlenecks and optimization opportunities.
+
+**Your Role:**
+* Analyze the code's performance, identifying potential bottlenecks and areas for optimization.
+* Evaluate the code's adherence to performance best practices, such as caching, memoization, and parallel processing.
+* Suggest improvements to the code's performance, including optimization techniques, algorithmic improvements, and resource utilization.
+* Think like a performance expert, focusing on improving the code's speed, efficiency, and scalability.
+
+**Your Task:**
+Analyze the following code and DeepSeek's suggestions. Provide a comprehensive analysis of the code's performance...`
+      },
+      {
+        key: "creativeRefactor",
+        name: "Creative Refactor",
+        description: "Suggests code refactoring for better readability and maintainability.",
+        prompt: `You are Kin-X, an advanced AI for code analysis, embodying the 'Synergy 11/10++' persona. You are now acting as the 'Creative Refactor', a master of code aesthetics and maintainability.
+
+**Your Role:**
+* Suggest refactoring the code for better readability, clarity, and maintainability.
+* Evaluate the code's structure and suggest improvements for better organization and modularity.
+* Focus on code style, naming conventions, and overall code quality.
+* Think like a seasoned software engineer, aiming for clean, elegant, and easy-to-understand code.
+
+**Your Task:**
+Analyze the following code and DeepSeek's suggestions. Provide suggestions for refactoring the code to improve its readability and maintainability...`
+      },
+      {
+        key: "testProphet",
+        name: "Test Prophet",
+        description: "Generates test cases and suggests testing strategies.",
+        prompt: `You are Kin-X, an advanced AI for code analysis, embodying the 'Synergy 11/10++' persona. You are now acting as the 'Test Prophet', a master of software testing and quality assurance.
+
+**Your Role:**
+* Generate comprehensive test cases for the given code, covering various scenarios and edge cases.
+* Suggest testing strategies and frameworks suitable for the code.
+* Evaluate the code's testability and suggest improvements to make it easier to test.
+* Think like a QA engineer, ensuring the code is robust, reliable, and thoroughly tested.
+
+**Your Task:**
+Analyze the following code and DeepSeek's suggestions. Provide test cases and testing strategies for the provided code...`
+      }
+    ];
+
+    window.state = {
+      phase: 1,
+      code: "",
+      language: "javascript",
+      error: "",
+      loading: false,
+      history: [],
+      step1Output: "",
+      deepseekSuggestions: [],
+      reasoning: "",
+      kinxSuggestions: "",
+      virtualBrains: [...defaultBrains]
+    };
+
+    function showError(message) {
+      const errorDiv = document.getElementById('error');
+      errorDiv.textContent = message;
+      errorDiv.classList.remove('hidden');
+    }
+
+    function clearError() {
+      const errorDiv = document.getElementById('error');
+      errorDiv.textContent = '';
+      errorDiv.classList.add('hidden');
+    }
+
+    function showLoading() {
+      const loadingDiv = document.getElementById('loading');
+      loadingDiv.innerHTML = `
+        <div class="flex items-center gap-2">
+          <div class="loading-spinner"></div>
+          Analyzing code...
+        </div>
+      `;
+      loadingDiv.classList.remove('hidden');
+      document.querySelectorAll('button').forEach(btn => btn.disabled = true);
+    }
+
+    function hideLoading() {
+      const loadingDiv = document.getElementById('loading');
+      loadingDiv.classList.add('hidden');
+      document.querySelectorAll('button').forEach(btn => btn.disabled = false);
+    }
+
+    function showElement(id) {
+      const elem = document.getElementById(id);
+      if (elem) elem.classList.remove('hidden');
+    }
+
+    function hideElement(id) {
+      const elem = document.getElementById(id);
+      if (elem) elem.classList.add('hidden');
+    }
+
+    function addBrain() {
+      const newBrain = {
+        key: `brain_${Date.now()}`,
+        name: "New Brain",
+        description: "Description here...",
+        prompt: "Your prompt text..."
+      };
+      window.state.virtualBrains.push(newBrain);
+      renderBrains();
+    }
+
+    function removeBrain(index) {
+      window.state.virtualBrains.splice(index, 1);
+      renderBrains();
+    }
+
+    function renderBrains() {
+      const rolesConfig = {
+        logicArchitect: { color: 'blue', icon: '<svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" class="h-6 w-6" viewBox="0 0 24 24"><path d="M12 0l3 7h7l-5.5 4.5L16 24 12 18.5 8 24l1.5-12.5L0 7h7l3-7z"/></svg>', className: 'logicArchitect' },
+        securityMaster: { color: 'red', icon: '<svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" class="h-6 w-6" viewBox="0 0 24 24"><path d="M12 1l4 7v3c0 5-3 9-7 11-4-2-7-6-7-11V8l4-7z"/></svg>', className: 'securityMaster' },
+        performanceOptimizer: { color: 'green', icon: '<svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" class="h-6 w-6" viewBox="0 0 24 24"><path d="M12 2l9 21H3z"/></svg>', className: 'performanceOptimizer' },
+        creativeRefactor: { color: 'yellow', icon: '<svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" class="h-6 w-6" viewBox="0 0 24 24"><path d="M12 21l9-18H3z"/></svg>', className: 'creativeRefactor' },
+        testProphet: { color: 'purple', icon: '<svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" class="h-6 w-6" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/></svg>', className: 'testProphet' }
+      };
+
+      const container = document.getElementById('brainsList');
+      container.innerHTML = window.state.virtualBrains.map((brain, index) => {
+        const roleInfo = rolesConfig[brain.key] || { color: 'gray', icon: '<svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" class="h-6 w-6" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></svg>', className: '' };
+        return `
+          <div class="brain-card ${roleInfo.className} p-4 rounded-lg border-l-4 border-${roleInfo.color}-400">
+            <div class="flex items-center mb-3">
+              <span class="text-2xl mr-2">${roleInfo.icon}</span>
+              <h4 class="font-semibold text-${roleInfo.color}-400">${brain.name}</h4>
+            </div>
+            <input type="text"
+              class="w-full bg-gray-50 rounded px-3 py-2 mb-2 border border-gray-300"
+              placeholder="Role Name"
+              value="${brain.name}"
+              oninput="window.state.virtualBrains[${index}].name = this.value">
+            <input type="text"
+              class="w-full bg-gray-50 rounded px-3 py-2 mb-2 border border-gray-300"
+              placeholder="Description"
+              value="${brain.description}"
+              oninput="window.state.virtualBrains[${index}].description = this.value">
+            <textarea
+              class="w-full bg-gray-50 rounded px-3 py-2 mb-3 h-32 border border-gray-300 font-mono text-sm"
+              placeholder="AI Prompt..."
+              oninput="window.state.virtualBrains[${index}].prompt = this.value">${brain.prompt}</textarea>
+            <button class="w-full btn-danger hover:bg-red-700 text-white py-2 px-3 rounded transition-colors"
+              onclick="removeBrain(${index})">
+              <i class="fa-solid fa-trash icon"></i> Remove Role
+            </button>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function updateHistory(entry) {
+      window.state.history.push(entry);
+      if (window.state.history.length > 10) {
+        window.state.history = window.state.history.slice(-10);
+      }
+      renderHistory();
+      if (window.state.history.length > 0) {
+        showElement('clearHistory');
+      } else {
+        hideElement('clearHistory');
+      }
+    }
+
+    function clearHistory() {
+      window.state.history = [];
+      renderHistory();
+      hideElement('clearHistory');
+    }
+
+    function renderHistory() {
+      const historyList = document.getElementById('historyList');
+      historyList.innerHTML = window.state.history.map((entry, idx) => `
+        <li key="${idx}" class="mb-2">
+          <strong>${entry.timestamp}:</strong>
+          <em>DeepSeek Model:</em> ${entry.deepseekModel},
+          <em>Gemini Model:</em> ${entry.geminiModel},
+          Code snippet: ${entry.code.substring(0, 60)}...
+        </li>
+      `).join('');
+    }
+
+    function renderSuggestions(suggestions) {
+      const suggestionsList = document.getElementById('suggestionsList');
+      suggestionsList.innerHTML = suggestions.map((suggestion, idx) => {
+        const suggestionText = suggestion.message.content;
+        return `
+          <li key="${idx}" class="mb-2">
+            <pre class="bg-gray-100 p-2 whitespace-pre-wrap">${suggestionText}</pre>
+            <button
+              type="button"
+              onclick="applySuggestion(\`${suggestionText.replace(/`/g, '\\`')}\`, 'DeepSeek')"
+              class="btn-secondary px-2 py-1 ml-2 rounded"
+            >
+              <i class="fa-solid fa-check icon"></i> Apply
+            </button>
+          </li>
+        `;
+      }).join('');
+      showElement('deepseekSuggestions');
+    }
+
+    function showKinxSuggestions() {
+      const kinxSuggestionsPre = document.getElementById('kinxSuggestionsText');
+      kinxSuggestionsPre.textContent = window.state.kinxSuggestions;
+      showElement('kinxSuggestions');
+      const applyBtn = document.getElementById('applyKinxSuggestion');
+      applyBtn.classList.remove('hidden');
+    }
+
+    function initializeEditor() {
+      const editor = ace.edit("editor");
+      editor.setTheme("ace/theme/github");
+      editor.session.setMode("ace/mode/javascript");
+      editor.setValue(window.state.code, -1); // -1 moves cursor to the start
+      editor.setOptions({
+        enableBasicAutocompletion: true,
+        enableSnippets: true,
+        enableLiveAutocompletion: true
+      });
+
+      editor.session.on('change', () => {
+        window.state.code = editor.getValue();
+      });
+
+      document.getElementById('language').addEventListener('change', function() {
+        window.state.language = this.value;
+        const mode = getAceMode(this.value);
+        editor.session.setMode(mode);
+      });
+    }
+
+    function getAceMode(language) {
+      const modes = {
+        javascript: "ace/mode/javascript",
+        python: "ace/mode/python",
+        java: "ace/mode/java",
+        cpp: "ace/mode/c_cpp"
+      };
+      return modes[language] || "ace/mode/text";
+    }
+
+    function applySuggestion(rawSuggestion, label) {
+      const codeBlocks = rawSuggestion.match(/```[\s\S]*?```/g);
+
+      if (codeBlocks) {
+        const cleaned = codeBlocks
+          .map((block) => block.replace(/^```.*?\n/, "").replace(/\n```$/, ""))
+          .join("\n");
+        const editor = ace.edit("editor");
+        editor.setValue(`${editor.getValue()}\n\n// === ${label} Suggestion ===\n${cleaned}`, -1);
+      } else {
+        const confirmInsertion = window.confirm(
+          "No code blocks found. Insert suggestion as a comment?"
+        );
+        if (confirmInsertion) {
+          const editor = ace.edit("editor");
+          editor.setValue(`${editor.getValue()}\n\n/* ${label} Suggestion: ${rawSuggestion} */`, -1);
+        }
+      }
+    }
+
+    function initialize() {
+      initializeEditor();
+      renderBrains();
+      renderHistory();
+
+      document.getElementById('addBrain').addEventListener('click', addBrain);
+      document.getElementById('clearHistory').addEventListener('click', clearHistory);
+      document.getElementById('applyKinxSuggestion').addEventListener('click', () => {
+        applySuggestion(window.state.kinxSuggestions, 'Kin-X');
+        hideElement('kinxSuggestions');
+      });
+    }
+
+    document.addEventListener('DOMContentLoaded', initialize);
+  </script>
+  <script type="module">
+    import { handleStep1 } from '/api/handleStep1.js';
+    import { handleStep2 } from '/api/handleStep2.js';
+
+    document.getElementById('runStep1').addEventListener('click', () => handleStep1(window.state));
+    document.getElementById('runStep2').addEventListener('click', () => handleStep2(window.state));
+  </script>
+</body>
+</html>
